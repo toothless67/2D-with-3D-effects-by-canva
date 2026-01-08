@@ -1,0 +1,1114 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rocket League Heat Seeker</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Arial Black', Arial, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      overflow: hidden;
+      height: 100%;
+    }
+
+    html {
+      height: 100%;
+    }
+
+    #gameContainer {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #canvas {
+      flex: 1;
+      display: block;
+      background: linear-gradient(180deg, #0f3460 0%, #16213e 30%, #1a1a2e 70%, #0e1419 100%);
+    }
+
+    #hud {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .score {
+      background: rgba(0, 0, 0, 0.8);
+      padding: 15px 30px;
+      border-radius: 10px;
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+      border: 3px solid;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+    }
+
+    #playerScore {
+      border-color: #00ffff;
+      color: #00ffff;
+    }
+
+    #aiScore {
+      border-color: #ff6b35;
+      color: #ff6b35;
+    }
+
+    #timer {
+      background: rgba(0, 0, 0, 0.8);
+      padding: 15px 40px;
+      border-radius: 10px;
+      color: #ffffff;
+      font-size: 32px;
+      font-weight: bold;
+      border: 3px solid #ffffff;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    }
+
+    #controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      padding: 15px 25px;
+      border-radius: 10px;
+      color: white;
+      font-size: 14px;
+      text-align: center;
+      border: 2px solid #00ffff;
+      box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+    }
+
+    #gameOver {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.95);
+      padding: 40px 60px;
+      border-radius: 20px;
+      text-align: center;
+      display: none;
+      border: 4px solid #00ffff;
+      pointer-events: all;
+      box-shadow: 0 0 30px rgba(0, 255, 255, 0.7);
+    }
+
+    #gameOver h2 {
+      color: #00ffff;
+      font-size: 48px;
+      margin: 0 0 20px 0;
+      text-shadow: 0 0 10px #00ffff;
+    }
+
+    #gameOver p {
+      color: white;
+      font-size: 24px;
+      margin: 10px 0;
+    }
+
+    #restartBtn {
+      margin-top: 30px;
+      padding: 15px 40px;
+      font-size: 20px;
+      font-weight: bold;
+      background: linear-gradient(135deg, #00ffff 0%, #0080ff 100%);
+      color: #000;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      box-shadow: 0 4px 15px rgba(0, 255, 255, 0.4);
+    }
+
+    #restartBtn:hover {
+      transform: scale(1.1);
+      background: linear-gradient(135deg, #40ffff 0%, #4080ff 100%);
+    }
+
+    #title {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: white;
+      z-index: 5;
+    }
+
+    #title h1 {
+      font-size: 64px;
+      margin: 0 0 20px 0;
+      color: #00ffff;
+      text-shadow: 0 0 20px #00ffff, 0 0 40px #0080ff;
+    }
+
+    #title p {
+      font-size: 20px;
+      margin: 10px 0;
+      color: #ffffff;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+    }
+
+    #startBtn {
+      margin-top: 30px;
+      padding: 20px 50px;
+      font-size: 24px;
+      font-weight: bold;
+      background: linear-gradient(135deg, #00ffff 0%, #0080ff 100%);
+      color: #000;
+      border: none;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: transform 0.2s;
+      box-shadow: 0 4px 20px rgba(0, 255, 255, 0.5);
+    }
+
+    #startBtn:hover {
+      transform: scale(1.1);
+      background: linear-gradient(135deg, #40ffff 0%, #4080ff 100%);
+    }
+
+    #loadingScreen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 20;
+    }
+
+    .spinning-car {
+      width: 120px;
+      height: 60px;
+      position: relative;
+      animation: boost 2s ease-in-out infinite;
+      margin-bottom: 20px;
+    }
+
+    .car-body {
+      width: 80px;
+      height: 30px;
+      background: linear-gradient(135deg, #00ffff 0%, #0080ff 100%);
+      border-radius: 15px;
+      position: absolute;
+      top: 15px;
+      left: 20px;
+    }
+
+    .car-wheels {
+      width: 15px;
+      height: 15px;
+      background: #333;
+      border-radius: 50%;
+      position: absolute;
+      top: 35px;
+      animation: spin 0.5s linear infinite;
+    }
+
+    .wheel-left {
+      left: 25px;
+    }
+
+    .wheel-right {
+      right: 25px;
+    }
+
+    .rocket-flame {
+      width: 30px;
+      height: 8px;
+      background: linear-gradient(90deg, #ff6b35 0%, #ffff00 100%);
+      border-radius: 4px;
+      position: absolute;
+      top: 26px;
+      left: -10px;
+      animation: flicker 0.1s ease-in-out infinite alternate;
+    }
+
+    @keyframes boost {
+      0%, 100% { transform: translateX(0px); }
+      50% { transform: translateX(20px); }
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes flicker {
+      0% { opacity: 0.8; transform: scaleX(1); }
+      100% { opacity: 1; transform: scaleX(1.2); }
+    }
+
+    #loadingText {
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+    }
+
+    .celebration-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(0, 255, 255, 0.8) 0%, rgba(0, 128, 255, 0.6) 50%, transparent 100%);
+      display: none;
+      z-index: 15;
+      animation: goalExplosion 2s ease-out;
+    }
+
+    @keyframes goalExplosion {
+      0% { opacity: 0; transform: scale(0.5); }
+      50% { opacity: 1; transform: scale(1.2); }
+      100% { opacity: 0; transform: scale(1); }
+    }
+
+    .boost-trail {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: #00ffff;
+      border-radius: 50%;
+      pointer-events: none;
+      animation: trailFade 0.5s ease-out forwards;
+    }
+
+    @keyframes trailFade {
+      0% { opacity: 1; transform: scale(1); }
+      100% { opacity: 0; transform: scale(0.2); }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div id="gameContainer">
+   <canvas id="canvas"></canvas>
+   <div id="hud">
+    <div id="playerScore" class="score">
+     🚗 <span id="playerName">PLAYER</span>: <span id="playerScoreValue">0</span>
+    </div>
+    <div id="timer">
+     5:00
+    </div>
+    <div id="aiScore" class="score">
+     🤖 <span id="aiName">AI</span>: <span id="aiScoreValue">0</span>
+    </div>
+   </div>
+   <div id="controls">
+    WASD or Arrow Keys: Drive | SPACE: Boost | Heat Seeker Ball Auto-Targets Goals! 🎯
+   </div>
+   <div id="loadingScreen">
+    <div class="spinning-car">
+     <div class="rocket-flame"></div>
+     <div class="car-body"></div>
+     <div class="car-wheels wheel-left"></div>
+     <div class="car-wheels wheel-right"></div>
+    </div>
+    <div id="loadingText">
+     Initializing Rocket League...
+    </div>
+   </div>
+   <div class="celebration-overlay" id="celebrationOverlay"></div>
+   <div id="title" style="display: none;">
+    <h1 id="gameTitle">ROCKET LEAGUE HEAT SEEKER</h1>
+    <p>🚗 1v1 Heat Seeker Mode - Ball Auto-Targets Goals! 🎯</p>
+    <p>Rocket-powered cars in zero gravity arena!</p>
+    <p>Game Duration: 5 minutes</p><button id="startBtn">IGNITE ENGINES!</button>
+   </div>
+   <div id="gameOver">
+    <h2 id="winnerText">ROCKET LEAGUE CHAMPION!</h2>
+    <p id="finalScore">Final Score: 5 - 3</p><button id="restartBtn">REMATCH!</button>
+   </div>
+  </div>
+  <script>
+    const defaultConfig = {
+      game_title: "ROCKET LEAGUE HEAT SEEKER",
+      player_label: "PLAYER",
+      ai_label: "AI",
+      primary_color: "#00ffff",
+      secondary_color: "#ff6b35",
+      background_color: "#0f3460",
+      text_color: "#ffffff",
+      accent_color: "#0080ff",
+      font_family: "Arial Black",
+      font_size: 16
+    };
+
+    const config = window.elementSdk ? window.elementSdk.config : defaultConfig;
+
+    async function onConfigChange(config) {
+      const gameTitle = config.game_title || defaultConfig.game_title;
+      const playerLabel = config.player_label || defaultConfig.player_label;
+      const aiLabel = config.ai_label || defaultConfig.ai_label;
+      const primaryColor = config.primary_color || defaultConfig.primary_color;
+      const secondaryColor = config.secondary_color || defaultConfig.secondary_color;
+      const textColor = config.text_color || defaultConfig.text_color;
+      const accentColor = config.accent_color || defaultConfig.accent_color;
+      const fontFamily = config.font_family || defaultConfig.font_family;
+      const fontSize = config.font_size || defaultConfig.font_size;
+
+      document.getElementById('gameTitle').textContent = gameTitle;
+      document.getElementById('playerName').textContent = playerLabel;
+      document.getElementById('aiName').textContent = aiLabel;
+
+      document.getElementById('title').querySelector('h1').style.color = primaryColor;
+      document.getElementById('title').querySelector('h1').style.textShadow = `0 0 20px ${primaryColor}, 0 0 40px ${accentColor}`;
+      document.getElementById('playerScore').style.borderColor = primaryColor;
+      document.getElementById('playerScore').style.color = primaryColor;
+      document.getElementById('aiScore').style.borderColor = secondaryColor;
+      document.getElementById('aiScore').style.color = secondaryColor;
+      document.getElementById('controls').style.borderColor = primaryColor;
+      document.getElementById('gameOver').style.borderColor = primaryColor;
+      document.getElementById('gameOver').querySelector('h2').style.color = primaryColor;
+
+      const baseFontStack = 'Arial, sans-serif';
+      document.body.style.fontFamily = `${fontFamily}, ${baseFontStack}`;
+      
+      document.getElementById('title').querySelector('h1').style.fontSize = `${fontSize * 4}px`;
+      document.getElementById('title').querySelectorAll('p').forEach(p => {
+        p.style.fontSize = `${fontSize * 1.25}px`;
+      });
+      document.querySelector('.score').style.fontSize = `${fontSize * 1.5}px`;
+      document.getElementById('timer').style.fontSize = `${fontSize * 2}px`;
+      document.getElementById('controls').style.fontSize = `${fontSize * 0.875}px`;
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities: (config) => ({
+          recolorables: [
+            {
+              get: () => config.primary_color || defaultConfig.primary_color,
+              set: (value) => {
+                config.primary_color = value;
+                window.elementSdk.setConfig({ primary_color: value });
+              }
+            },
+            {
+              get: () => config.secondary_color || defaultConfig.secondary_color,
+              set: (value) => {
+                config.secondary_color = value;
+                window.elementSdk.setConfig({ secondary_color: value });
+              }
+            },
+            {
+              get: () => config.background_color || defaultConfig.background_color,
+              set: (value) => {
+                config.background_color = value;
+                window.elementSdk.setConfig({ background_color: value });
+              }
+            },
+            {
+              get: () => config.text_color || defaultConfig.text_color,
+              set: (value) => {
+                config.text_color = value;
+                window.elementSdk.setConfig({ text_color: value });
+              }
+            },
+            {
+              get: () => config.accent_color || defaultConfig.accent_color,
+              set: (value) => {
+                config.accent_color = value;
+                window.elementSdk.setConfig({ accent_color: value });
+              }
+            }
+          ],
+          borderables: [],
+          fontEditable: {
+            get: () => config.font_family || defaultConfig.font_family,
+            set: (value) => {
+              config.font_family = value;
+              window.elementSdk.setConfig({ font_family: value });
+            }
+          },
+          fontSizeable: {
+            get: () => config.font_size || defaultConfig.font_size,
+            set: (value) => {
+              config.font_size = value;
+              window.elementSdk.setConfig({ font_size: value });
+            }
+          }
+        }),
+        mapToEditPanelValues: (config) => new Map([
+          ["game_title", config.game_title || defaultConfig.game_title],
+          ["player_label", config.player_label || defaultConfig.player_label],
+          ["ai_label", config.ai_label || defaultConfig.ai_label]
+        ])
+      });
+    }
+
+    onConfigChange(config);
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    let gameStarted = false;
+    let gameTime = 300; // 5 minutes
+    let playerScore = 0;
+    let aiScore = 0;
+    let boostTrails = [];
+
+    function resizeCanvas() {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // Show loading screen initially
+    setTimeout(() => {
+      document.getElementById('loadingScreen').style.display = 'none';
+      document.getElementById('title').style.display = 'block';
+    }, 3000);
+
+    // Player car (blue team)
+    const player = {
+      x: canvas.width * 0.25,
+      y: canvas.height * 0.5,
+      z: 0,
+      vx: 0, vy: 0, vz: 0,
+      angle: 0,
+      size: 20,
+      boost: 100,
+      onGround: true,
+      team: 'blue'
+    };
+
+    // AI car (orange team)
+    const ai = {
+      x: canvas.width * 0.75,
+      y: canvas.height * 0.5,
+      z: 0,
+      vx: 0, vy: 0, vz: 0,
+      angle: Math.PI,
+      size: 20,
+      boost: 100,
+      onGround: true,
+      team: 'orange'
+    };
+
+    // Heat Seeker Ball - automatically targets goals
+    const ball = {
+      x: canvas.width * 0.5,
+      y: canvas.height * 0.5,
+      z: 20,
+      vx: 0, vy: 0, vz: 0,
+      radius: 12,
+      targetGoal: null,
+      heatSeekerActive: false,
+      trail: []
+    };
+
+    const keys = {};
+
+    document.addEventListener('keydown', (e) => {
+      keys[e.key.toLowerCase()] = true;
+      // Map arrow keys
+      if (e.key === 'ArrowUp') keys['w'] = true;
+      if (e.key === 'ArrowDown') keys['s'] = true;
+      if (e.key === 'ArrowLeft') keys['a'] = true;
+      if (e.key === 'ArrowRight') keys['d'] = true;
+    });
+
+    document.addEventListener('keyup', (e) => {
+      keys[e.key.toLowerCase()] = false;
+      // Map arrow keys
+      if (e.key === 'ArrowUp') keys['w'] = false;
+      if (e.key === 'ArrowDown') keys['s'] = false;
+      if (e.key === 'ArrowLeft') keys['a'] = false;
+      if (e.key === 'ArrowRight') keys['d'] = false;
+    });
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      gameStarted = true;
+      document.getElementById('title').style.display = 'none';
+      resetGame();
+    });
+
+    document.getElementById('restartBtn').addEventListener('click', () => {
+      document.getElementById('gameOver').style.display = 'none';
+      gameStarted = true;
+      resetGame();
+    });
+
+    function resetGame() {
+      gameTime = 300;
+      playerScore = 0;
+      aiScore = 0;
+      updateScores();
+      resetPositions();
+    }
+
+    function resetPositions() {
+      player.x = canvas.width * 0.25;
+      player.y = canvas.height * 0.5;
+      player.z = 0;
+      player.vx = 0; player.vy = 0; player.vz = 0;
+      player.onGround = true;
+
+      ai.x = canvas.width * 0.75;
+      ai.y = canvas.height * 0.5;
+      ai.z = 0;
+      ai.vx = 0; ai.vy = 0; ai.vz = 0;
+      ai.onGround = true;
+
+      ball.x = canvas.width * 0.5;
+      ball.y = canvas.height * 0.5;
+      ball.z = 20;
+      ball.vx = (Math.random() - 0.5) * 6;
+      ball.vy = (Math.random() - 0.5) * 6;
+      ball.vz = 0;
+      ball.targetGoal = null;
+      ball.heatSeekerActive = false;
+      ball.trail = [];
+    }
+
+    function updateScores() {
+      document.getElementById('playerScoreValue').textContent = playerScore;
+      document.getElementById('aiScoreValue').textContent = aiScore;
+    }
+
+    function updateTimer() {
+      const minutes = Math.floor(gameTime / 60);
+      const seconds = Math.floor(gameTime % 60);
+      document.getElementById('timer').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function showCelebration() {
+      const overlay = document.getElementById('celebrationOverlay');
+      overlay.style.display = 'block';
+      setTimeout(() => {
+        overlay.style.display = 'none';
+      }, 2000);
+    }
+
+    function addBoostTrail(car) {
+      const trail = document.createElement('div');
+      trail.className = 'boost-trail';
+      trail.style.left = (car.x - Math.cos(car.angle) * car.size) + 'px';
+      trail.style.top = (car.y - Math.sin(car.angle) * car.size) + 'px';
+      trail.style.background = car.team === 'blue' ? '#00ffff' : '#ff6b35';
+      document.getElementById('gameContainer').appendChild(trail);
+      
+      setTimeout(() => {
+        if (trail.parentNode) {
+          trail.parentNode.removeChild(trail);
+        }
+      }, 500);
+    }
+
+    function updatePlayer() {
+      const moveSpeed = 2;
+      const friction = 0.88;
+      const gravity = 0.3;
+
+      // Ground detection
+      player.onGround = player.z <= 0;
+      if (player.onGround) {
+        player.z = 0;
+        player.vz = 0;
+      }
+
+      // Direct movement - much more responsive and predictable
+      if (keys['w']) {
+        player.vx += Math.cos(player.angle) * moveSpeed;
+        player.vy += Math.sin(player.angle) * moveSpeed;
+      }
+      if (keys['s']) {
+        player.vx -= Math.cos(player.angle) * moveSpeed * 0.6;
+        player.vy -= Math.sin(player.angle) * moveSpeed * 0.6;
+      }
+      
+      // Much slower turning for precision
+      if (keys['a']) player.angle -= 0.03;
+      if (keys['d']) player.angle += 0.03;
+      
+      // Gentle boost
+      if (keys[' '] && player.boost > 0) {
+        player.vx += Math.cos(player.angle) * 3;
+        player.vy += Math.sin(player.angle) * 3;
+        player.boost -= 0.8;
+        addBoostTrail(player);
+      } else if (player.boost < 100) {
+        player.boost += 0.7;
+      }
+
+      // Jump - simpler jump mechanic
+      if (keys['w'] && keys[' '] && player.onGround) {
+        player.vz = 6;
+      }
+
+      // Physics with high friction for control
+      if (!player.onGround) {
+        player.vz -= gravity;
+      }
+
+      player.vx *= friction;
+      player.vy *= friction;
+      player.vz *= 0.98;
+
+      // Much lower max speed for control
+      const maxSpeed = 5;
+      const currentSpeed = Math.sqrt(player.vx**2 + player.vy**2);
+      if (currentSpeed > maxSpeed) {
+        player.vx = (player.vx / currentSpeed) * maxSpeed;
+        player.vy = (player.vy / currentSpeed) * maxSpeed;
+      }
+
+      player.x += player.vx;
+      player.y += player.vy;
+      player.z += player.vz;
+
+      if (player.z < 0) {
+        player.z = 0;
+        player.vz = 0;
+      }
+
+      // Arena boundaries
+      player.x = Math.max(player.size, Math.min(canvas.width - player.size, player.x));
+      player.y = Math.max(player.size, Math.min(canvas.height - player.size, player.y));
+    }
+
+    function updateAI() {
+      const dx = ball.x - ai.x;
+      const dy = ball.y - ai.y;
+      const distance = Math.sqrt(dx**2 + dy**2);
+      
+      // AI strategy
+      const targetAngle = Math.atan2(dy, dx);
+      const angleDiff = targetAngle - ai.angle;
+      
+      // Smooth turning
+      if (Math.abs(angleDiff) > 0.1) {
+        ai.angle += Math.sign(angleDiff) * 0.06;
+      }
+
+      const aiSpeed = 4;
+      if (distance > 50) {
+        ai.vx += Math.cos(ai.angle) * aiSpeed;
+        ai.vy += Math.sin(ai.angle) * aiSpeed;
+      }
+
+      // AI boost usage
+      if (distance > 150 && ai.boost > 50) {
+        ai.vx += Math.cos(ai.angle) * 6;
+        ai.vy += Math.sin(ai.angle) * 6;
+        ai.boost -= 0.8;
+        addBoostTrail(ai);
+      } else if (ai.boost < 100) {
+        ai.boost += 0.4;
+      }
+
+      // AI physics
+      ai.onGround = ai.z <= 0;
+      if (ai.onGround) {
+        ai.z = 0;
+        ai.vz = 0;
+      } else {
+        ai.vz -= 0.4;
+      }
+
+      const friction = 0.93;
+      ai.vx *= friction;
+      ai.vy *= friction;
+      ai.vz *= 0.98;
+
+      const maxSpeed = 10;
+      const currentSpeed = Math.sqrt(ai.vx**2 + ai.vy**2);
+      if (currentSpeed > maxSpeed) {
+        ai.vx = (ai.vx / currentSpeed) * maxSpeed;
+        ai.vy = (ai.vy / currentSpeed) * maxSpeed;
+      }
+
+      ai.x += ai.vx;
+      ai.y += ai.vy;
+      ai.z += ai.vz;
+
+      if (ai.z < 0) {
+        ai.z = 0;
+        ai.vz = 0;
+      }
+
+      ai.x = Math.max(ai.size, Math.min(canvas.width - ai.size, ai.x));
+      ai.y = Math.max(ai.size, Math.min(canvas.height - ai.size, ai.y));
+    }
+
+    function updateBall() {
+      const friction = 0.995;
+      const gravity = 0.3;
+
+      // Heat Seeker Logic - Ball automatically targets goals
+      if (!ball.heatSeekerActive && (Math.abs(ball.vx) > 2 || Math.abs(ball.vy) > 2)) {
+        ball.heatSeekerActive = true;
+        
+        // Determine which goal to target based on ball position and velocity
+        if (ball.x < canvas.width * 0.5) {
+          ball.targetGoal = 'right'; // Target right goal (AI goal)
+        } else {
+          ball.targetGoal = 'left'; // Target left goal (Player goal)
+        }
+      }
+
+      // Apply heat seeker effect
+      if (ball.heatSeekerActive && ball.targetGoal) {
+        const seekerStrength = 0.15;
+        let targetX, targetY;
+        
+        if (ball.targetGoal === 'left') {
+          targetX = 0;
+          targetY = canvas.height * 0.5;
+        } else {
+          targetX = canvas.width;
+          targetY = canvas.height * 0.5;
+        }
+        
+        const dx = targetX - ball.x;
+        const dy = targetY - ball.y;
+        const distance = Math.sqrt(dx**2 + dy**2);
+        
+        if (distance > 0) {
+          ball.vx += (dx / distance) * seekerStrength;
+          ball.vy += (dy / distance) * seekerStrength;
+        }
+      }
+
+      ball.vx *= friction;
+      ball.vy *= friction;
+      ball.vz -= gravity;
+      ball.vz *= 0.97;
+
+      ball.x += ball.vx;
+      ball.y += ball.vy;
+      ball.z += ball.vz;
+
+      // Ball trail effect
+      ball.trail.push({ x: ball.x, y: ball.y, time: Date.now() });
+      ball.trail = ball.trail.filter(point => Date.now() - point.time < 200);
+
+      // Ground bounce
+      if (ball.z < ball.radius) {
+        ball.z = ball.radius;
+        ball.vz *= -0.7;
+      }
+
+      // Wall bounces
+      if (ball.x - ball.radius < 0 || ball.x + ball.radius > canvas.width) {
+        ball.vx *= -0.8;
+        ball.x = Math.max(ball.radius, Math.min(canvas.width - ball.radius, ball.x));
+      }
+      if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+        ball.vy *= -0.8;
+        ball.y = Math.max(ball.radius, Math.min(canvas.height - ball.radius, ball.y));
+      }
+
+      // Check collisions
+      checkCollision(player, ball);
+      checkCollision(ai, ball);
+      checkGoal();
+    }
+
+    function checkCollision(car, ball) {
+      const dx = ball.x - car.x;
+      const dy = ball.y - car.y;
+      const dz = ball.z - car.z;
+      const distance = Math.sqrt(dx**2 + dy**2 + dz**2);
+
+      const collisionRadius = car.size + ball.radius + 5;
+      
+      if (distance < collisionRadius) {
+        const angle = Math.atan2(dy, dx);
+        const speed = Math.sqrt(car.vx**2 + car.vy**2);
+        
+        // Powerful car hits
+        ball.vx = Math.cos(angle) * (speed * 1.3 + 7);
+        ball.vy = Math.sin(angle) * (speed * 1.3 + 7);
+        ball.vz = 4 + Math.random() * 3;
+
+        // Reset heat seeker when hit
+        ball.heatSeekerActive = false;
+        ball.targetGoal = null;
+
+        const overlap = collisionRadius - distance;
+        ball.x += Math.cos(angle) * overlap;
+        ball.y += Math.sin(angle) * overlap;
+      }
+    }
+
+    function checkGoal() {
+      const goalWidth = 80;
+      const goalHeight = 60;
+      const goalY = canvas.height * 0.5;
+
+      // Left goal (Player scores on right goal)
+      if (ball.x < 20 && Math.abs(ball.y - goalY) < goalWidth && ball.z < goalHeight) {
+        aiScore++;
+        showCelebration();
+        updateScores();
+        resetPositions();
+      }
+
+      // Right goal (AI scores on left goal)
+      if (ball.x > canvas.width - 20 && Math.abs(ball.y - goalY) < goalWidth && ball.z < goalHeight) {
+        playerScore++;
+        showCelebration();
+        updateScores();
+        resetPositions();
+      }
+    }
+
+    function drawField() {
+      // Arena background
+      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      gradient.addColorStop(0, config.background_color || defaultConfig.background_color);
+      gradient.addColorStop(0.3, '#16213e');
+      gradient.addColorStop(0.7, '#1a1a2e');
+      gradient.addColorStop(1, '#0e1419');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Arena floor grid
+      ctx.strokeStyle = 'rgba(0, 255, 255, 0.2)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < canvas.width; x += 50) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y < canvas.height; y += 50) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      // Center line
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([20, 10]);
+      ctx.beginPath();
+      ctx.moveTo(canvas.width * 0.5, 0);
+      ctx.lineTo(canvas.width * 0.5, canvas.height);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Center circle
+      ctx.beginPath();
+      ctx.arc(canvas.width * 0.5, canvas.height * 0.5, 80, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Goals
+      const goalWidth = 80;
+      const goalHeight = 60;
+      const goalY = canvas.height * 0.5;
+      
+      // Left goal
+      ctx.fillStyle = 'rgba(255, 107, 53, 0.3)';
+      ctx.fillRect(0, goalY - goalWidth, 20, goalWidth * 2);
+      ctx.strokeStyle = config.secondary_color || defaultConfig.secondary_color;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(0, goalY - goalWidth, 20, goalWidth * 2);
+      
+      // Right goal
+      ctx.fillStyle = 'rgba(0, 255, 255, 0.3)';
+      ctx.fillRect(canvas.width - 20, goalY - goalWidth, 20, goalWidth * 2);
+      ctx.strokeStyle = config.primary_color || defaultConfig.primary_color;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(canvas.width - 20, goalY - goalWidth, 20, goalWidth * 2);
+    }
+
+    function drawCar(car, color) {
+      ctx.save();
+      ctx.translate(car.x, car.y);
+      ctx.rotate(car.angle);
+
+      // Shadow
+      const shadowSize = car.size * (1 + car.z * 0.01);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.beginPath();
+      ctx.ellipse(0, car.z * 0.5, shadowSize * 0.8, shadowSize * 0.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.translate(0, -car.z * 0.8);
+
+      // Car body
+      ctx.fillStyle = color;
+      ctx.fillRect(-car.size, -car.size * 0.5, car.size * 2, car.size);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(-car.size, -car.size * 0.5, car.size * 2, car.size);
+
+      // Car details
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+      ctx.fillRect(-car.size * 0.7, -car.size * 0.3, car.size * 1.4, car.size * 0.6);
+
+      // Wheels
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+      ctx.beginPath();
+      ctx.arc(-car.size * 0.6, car.size * 0.4, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(car.size * 0.6, car.size * 0.4, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(-car.size * 0.6, -car.size * 0.4, 6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(car.size * 0.6, -car.size * 0.4, 6, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawBall() {
+      // Ball trail
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let i = 0; i < ball.trail.length - 1; i++) {
+        const alpha = i / ball.trail.length;
+        ctx.globalAlpha = alpha;
+        if (i === 0) {
+          ctx.moveTo(ball.trail[i].x, ball.trail[i].y);
+        } else {
+          ctx.lineTo(ball.trail[i].x, ball.trail[i].y);
+        }
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Shadow
+      const shadowSize = ball.radius * (1 + ball.z * 0.01);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.beginPath();
+      ctx.ellipse(ball.x, ball.y + ball.z * 0.4, shadowSize * 0.8, shadowSize * 0.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Heat seeker glow effect
+      if (ball.heatSeekerActive) {
+        const glowGradient = ctx.createRadialGradient(
+          ball.x, ball.y - ball.z, 0,
+          ball.x, ball.y - ball.z, ball.radius * 2
+        );
+        glowGradient.addColorStop(0, 'rgba(255, 0, 0, 0.8)');
+        glowGradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+        ctx.fillStyle = glowGradient;
+        ctx.beginPath();
+        ctx.arc(ball.x, ball.y - ball.z, ball.radius * 2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Ball
+      const ballGradient = ctx.createRadialGradient(
+        ball.x - ball.radius * 0.3,
+        ball.y - ball.z - ball.radius * 0.3,
+        0,
+        ball.x,
+        ball.y - ball.z,
+        ball.radius
+      );
+      ballGradient.addColorStop(0, '#ffffff');
+      ballGradient.addColorStop(0.7, '#cccccc');
+      ballGradient.addColorStop(1, '#888888');
+
+      ctx.fillStyle = ballGradient;
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y - ball.z, ball.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Ball pattern
+      ctx.strokeStyle = '#666666';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y - ball.z, ball.radius * 0.7, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    function gameLoop() {
+      if (gameStarted) {
+        gameTime -= 1/60;
+        if (gameTime <= 0) {
+          gameTime = 0;
+          endGame();
+        }
+        updateTimer();
+
+        updatePlayer();
+        updateAI();
+        updateBall();
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawField();
+      drawBall();
+      
+      // Draw cars
+      const playerColor = config.primary_color || defaultConfig.primary_color;
+      const aiColor = config.secondary_color || defaultConfig.secondary_color;
+      
+      drawCar(player, playerColor);
+      drawCar(ai, aiColor);
+
+      // Boost indicators
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(20, canvas.height - 60, 120, 20);
+      ctx.fillStyle = playerColor;
+      ctx.fillRect(22, canvas.height - 58, (player.boost / 100) * 116, 16);
+      ctx.fillStyle = 'white';
+      ctx.font = '12px Arial';
+      ctx.fillText('BOOST', 25, canvas.height - 45);
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    function endGame() {
+      gameStarted = false;
+      const gameOverDiv = document.getElementById('gameOver');
+      const winnerText = document.getElementById('winnerText');
+      const finalScore = document.getElementById('finalScore');
+
+      if (playerScore > aiScore) {
+        winnerText.textContent = 'ROCKET LEAGUE CHAMPION!';
+        winnerText.style.color = config.primary_color || defaultConfig.primary_color;
+      } else if (aiScore > playerScore) {
+        winnerText.textContent = 'AI WINS!';
+        winnerText.style.color = config.secondary_color || defaultConfig.secondary_color;
+      } else {
+        winnerText.textContent = 'OVERTIME DRAW!';
+        winnerText.style.color = config.accent_color || defaultConfig.accent_color;
+      }
+
+      finalScore.textContent = `Final Score: ${playerScore} - ${aiScore}`;
+      gameOverDiv.style.display = 'block';
+    }
+
+    gameLoop();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9baccf18f79eaac6',t:'MTc2Nzg4Njk5MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
